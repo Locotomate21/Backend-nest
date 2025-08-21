@@ -84,7 +84,7 @@ Como administrador deseo registrar una habitación para asignarla a residentes.
 
 Clonar el repositorio:
 
-git clone https://github.com/usuario/proyecto-residencias.git
+git clone [https://github.com/usuario/proyecto-residencias.git](https://github.com/Locotomate21/Backend-nest.git)](https://github.com/Locotomate21/Backend-nest.git)
 
 
 Instalar dependencias:
@@ -94,7 +94,7 @@ npm install
 
 Configurar las variables de entorno en un archivo .env:
 
-MONGO_URI=mongodb+srv://usuario:password@cluster/db_residencias
+MONGO_URI=mongodb+srv://CarlosSoft:locotomate21@cluster0.ujsug4w.mongodb.net/residents_rooms?retryWrites=true&w=majority
 PORT=3000
 
 
