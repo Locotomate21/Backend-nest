@@ -80,3 +80,36 @@ Como administrador deseo visualizar todos los residentes registrados para gestio
 HU-03: Registrar habitación
 
 Como administrador deseo registrar una habitación para asignarla a residentes.
+⚙️ Instalación y ejecución
+
+Clonar el repositorio:
+
+git clone https://github.com/usuario/proyecto-residencias.git
+
+
+Instalar dependencias:
+
+npm install
+
+
+Configurar las variables de entorno en un archivo .env:
+
+MONGO_URI=mongodb+srv://usuario:password@cluster/db_residencias
+PORT=3000
+
+
+Iniciar el proyecto en modo desarrollo:
+
+npm run start:dev
+
+✅ Requisitos previos
+
+Node.js v18+
+
+NestJS CLI
+
+MongoDB (Atlas o local)
+
+🔗 Enlace al repositorio
+
+GitHub – Proyecto Residencias Universitarias
