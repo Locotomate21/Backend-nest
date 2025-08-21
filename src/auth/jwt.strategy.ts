@@ -15,8 +15,14 @@
     }
 
     async validate(payload: any) {
-        return { userId: payload.sub, username: payload.username };
+    return { 
+        _id: payload.sub, 
+        role: payload.role,
+        email: payload.email ?? null,
+        fullName: payload.fullName ?? null,
+        floor: payload.floor,
+    };
     }
-    }
+}
 
 

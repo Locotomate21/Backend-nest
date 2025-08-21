@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core'; 
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -11,18 +11,20 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Configuración de Swagger
   const config = new DocumentBuilder()
     .setTitle('API RGSB')
     .setDescription('Residencias Gabriel Soto Bayona')
     .setVersion('1.0')
+    // Definimos el esquema Bearer JWT
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'Ingrese el token JWT aquí',
+        description: 'Ingrese el token JWT aqui',
       },
-      'jwt',
+      'jwt', // Nombre del esquema para Swagger
     )
     .build();
 
@@ -30,5 +32,7 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
 
   await app.listen(3000);
+  console.log(`🚀 Aplicación corriendo en http://localhost:3000`);
+  console.log(`📄 Documentación Swagger en http://localhost:3000/api-docs`);
 }
 bootstrap();

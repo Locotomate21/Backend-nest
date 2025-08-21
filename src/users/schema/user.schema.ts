@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/roles.enum';
+import { Resident } from '../../resident/schema/resident.schema';
 
 export type UserDocument = User & Document & {
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -29,6 +30,13 @@ export class User {
 
   @Prop({ default: true })
   active!: boolean;
+
+  // 🔹 Piso asignado al representante (solo aplica si role = Representative)
+  @Prop({ required: false, type: Number })
+  floor?: number;
+
+  @Prop({ type: Types.ObjectId, ref: 'Resident', default: null })
+  resident?: Types.ObjectId | Resident;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

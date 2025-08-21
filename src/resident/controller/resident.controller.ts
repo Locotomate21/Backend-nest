@@ -1,55 +1,84 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { RoomService } from '../../room/room.service';
-import { CreateRoomDto } from '../../room/dto/create-room.dto';
-import { UpdateRoomDto } from '../../room/dto/update-room.dto';
-import { RoomResponseDto } from '../../room/dto/room-response.dto';
+import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ResidentService } from '../resident.service';
+import { CreateResidentDto } from '../dto/create-resident.dto';
+import { UpdateResidentDto } from '../dto/update-resident.dto';
+import { Resident } from '../schema/resident.schema';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RolesGuard } from '../../auth/roles.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { Role } from '../../common/roles.enum';
 
+@ApiTags('Residents')
+@ApiBearerAuth('jwt')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('resident')
 export class ResidentController {
-  @Get()
-  findAll() {
-    return 'List of residents';
-  }
-}
+  constructor(private readonly residentService: ResidentService) {}
 
-@ApiTags('Rooms Module')
-@Controller('rooms')
-export class RoomController {
-  constructor(private readonly roomService: RoomService) {}
-
+  // 🔹 CREATE (solo admin o representative)
   @Post()
-  @ApiOperation({ summary: 'Create a new room' })
-  @ApiResponse({ status: 201, description: 'Room created successfully.' })
-  async create(@Body() createRoomDto: CreateRoomDto): Promise<RoomResponseDto> {
-    return this.roomService.create(createRoomDto);
+  @Roles(Role.Admin, Role.Representative)
+  @ApiOperation({ summary: 'Create a new resident (admin or representative only)' })
+  @ApiResponse({ status: 201, description: 'Resident created successfully.', type: Resident })
+  async create(@Body() createResidentDto: CreateResidentDto, @Req() req: any): Promise<Resident> {
+    // Pasamos el usuario que hace la creación al servicio
+    return this.residentService.create(createResidentDto, req.user);
   }
 
+  // 🔹 READ ALL
   @Get()
-  @ApiOperation({ summary: 'Get all rooms' })
-  async findAll() {
-    return this.roomService.findAll();
+  @Roles(Role.Representative, Role.Admin)
+  @ApiOperation({ summary: 'Get all residents' })
+  @ApiResponse({ status: 200, description: 'List of residents', type: [Resident] })
+  async findAll(): Promise<Resident[]> {
+    return this.residentService.findAll();
   }
 
+  // 🔹 READ BY ID
   @Get(':id')
-  @ApiOperation({ summary: 'Get a room by ID' })
-  @ApiResponse({ status: 404, description: 'Room not found' })
-  async findOne(@Param('id') id: string) {
-    return this.roomService.findOne(id);
+  @Roles(Role.Representative, Role.Admin)
+  @ApiOperation({ summary: 'Get a resident by ID' })
+  @ApiResponse({ status: 200, description: 'Resident found', type: Resident })
+  async findOne(@Param('id') id: string): Promise<Resident> {
+    return this.residentService.findOne(id);
   }
 
+  // 🔹 UPDATE (solo admin o representative) 
   @Put(':id')
-  @ApiOperation({ summary: 'Update a room' })
-  async update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
-    return this.roomService.update(id, updateRoomDto);
+  @Roles(Role.Admin, Role.Representative)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Update a resident (admin or representative only)' })
+  @ApiBody({
+    type: UpdateResidentDto,
+    schema: {
+      example: {
+        fullName: "string",
+        idNumber: 0,
+        studentCode: 0,
+        email: "string",
+        academicProgram: "string",
+        role: "string",
+        benefitOrActivity: "string",
+        period: "string",
+        admissionYear: 0,
+        room: "657890abcdef1234567890ab",
+      },
+    },
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateResidentDto: UpdateResidentDto,
+    @Req() req: any
+  ): Promise<Resident> {
+    return this.residentService.update(id, updateResidentDto, req.user);
   }
-
+  // 🔹 DELETE (solo admin)
   @Delete(':id')
+  @Roles(Role.Representative, Role.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a room' })
-  async remove(@Param('id') id: string) {
-    await this.roomService.remove(id);
+  @ApiOperation({ summary: 'Delete a resident (admin only)' })
+  async remove(@Param('id') id: string, @Req() req: any): Promise<void> {
+    await this.residentService.remove(id, req.user);
   }
-
-  // Aquí puedes agregar endpoints extras, ej. sincronizar ocupación
 }

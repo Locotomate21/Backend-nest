@@ -1,18 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsMongoId, IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateReportDto {
-  @ApiProperty({ example: '6891061f8e15482831e9e393', description: 'ID del residente' })
+  @ApiProperty({ description: 'ID del residente' })
   @IsMongoId()
-  resident!: string;
+  resident?: string;
 
-  @ApiProperty({ example: 'Daño en la ducha del baño 301', description: 'Motivo del reporte' })
-  @IsString()
-  @IsNotEmpty()
-  reason!: string;
-
-  @ApiProperty({ example: 'Se llamó al mantenimiento', required: false })
-  @IsString()
+  @ApiProperty({ description: 'Fecha del reporte', required: false })
   @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @ApiProperty({ description: 'Motivo del reporte' })
+  @IsString()
+  reason?: string;
+
+  @ApiProperty({ description: 'Acción tomada', required: false })
+  @IsOptional()
+  @IsString()
   actionTaken?: string;
 }

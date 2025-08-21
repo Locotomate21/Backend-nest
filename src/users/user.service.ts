@@ -1,86 +1,148 @@
-import { Injectable, BadRequestException, NotFoundException} from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schema/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from '../common/roles.enum';
+import { RoomService } from '../room/room.service';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly roomService: RoomService,
+  ) {}
 
-  // 🟢 Crear usuario
-  async createUser(createUserDto: CreateUserDto): Promise<User> {
-    const existing = await this.userModel.findOne({
-      email: createUserDto.email,
+  /** 🔹 Crear usuario */
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    // 🔹 Normalizar email
+    const normalizedEmail = createUserDto.email.toLowerCase();
+
+    // 🔹 Validar duplicado por email
+    const exists = await this.userModel.findOne({ email: normalizedEmail });
+    if (exists) {
+      throw new BadRequestException('El correo ya está registrado');
+    }
+
+    // 🔹 Normalizar role (asegurarnos de que coincida con el enum)
+    let normalizedRole: Role;
+    switch (createUserDto.role?.toString().toLowerCase()) {
+      case 'admin':
+        normalizedRole = Role.Admin;
+        break;
+      case 'resident':
+        normalizedRole = Role.Resident;
+        break;
+      case 'representative':
+        normalizedRole = Role.Representative;
+        break;
+      default:
+        throw new BadRequestException('Rol inválido');
+    }
+
+    // 🔹 Validaciones extra para representantes
+    if (normalizedRole === Role.Representative) {
+      if (!createUserDto.floor) {
+        throw new BadRequestException('Un representante debe tener un piso asignado');
+      }
+
+      // 🔹 usamos el método PÚBLICO del RoomService
+      await this.roomService.validateFloorAvailability(createUserDto.floor);
+    }
+
+    const newUser = new this.userModel({
+      ...createUserDto,
+      email: normalizedEmail,
+      role: normalizedRole,
     });
-    if (existing) throw new BadRequestException('El correo ya está registrado');
 
-    const user = new this.userModel(createUserDto);
-    return await user.save();
+    return newUser.save();
   }
 
-  // 📋 Obtener todos los usuarios
-  async getAllUser(): Promise<User[]> {
-    return await this.userModel.find().exec();
+  /** 🔹 Listar todos los usuarios */
+  async findAll(): Promise<User[]> {
+    return this.userModel.find().exec();
   }
 
-  // 🔍 Obtener usuario por ID
-  async getUserById(id: string): Promise<User> {
+  /** 🔹 Buscar un usuario por ID */
+  async findOne(id: string): Promise<UserDocument> {
+    try {
+      const user = await this.userModel
+        .findById(id)
+        .populate({
+          path: 'resident',
+          populate: {
+            path: 'room',
+            select: 'number floor occupied',
+          },
+        })
+        .lean()
+        .exec();
+
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
+
+      return user;
+    } catch (error: any) {
+      console.error('❌ Error en findOne:', error.message, error.stack);
+      throw new InternalServerErrorException('Error desconocido al obtener usuario');
+    }
+  }
+
+  /** 🔹 Actualizar usuario */
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('Usuario no encontrado');
-    return user;
+
+    if (updateUserDto.role === Role.Representative) {
+      if (!updateUserDto.floor) {
+        throw new BadRequestException('Un representante debe tener un piso asignado');
+      }
+
+      // 🔹 usamos el método PÚBLICO del RoomService
+      await this.roomService.validateFloorAvailability(updateUserDto.floor);
+
+      // ⚠ Se permite más de un representante por piso
+    }
+
+    Object.assign(user, updateUserDto);
+    return user.save();
   }
 
-  // ✏️ Actualizar usuario
-  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
-      .exec();
-    if (!user) throw new NotFoundException('Usuario no encontrado');
-    return user;
-  }
-
-  // ❌ Eliminar usuario
-  async deleteUser(id: string): Promise<{ message: string }> {
+  /** 🔹 Eliminar usuario */
+  async remove(id: string): Promise<void> {
     const result = await this.userModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException('Usuario no encontrado');
-    return { message: 'Usuario eliminado con éxito' };
   }
 
-  // 🔑 Registro
-  async register(registerDto: RegisterDto): Promise<User> {
-    const createUserDto: CreateUserDto = {
-      ...registerDto,
-      role: registerDto.role ?? Role.Resident,
-      active: true,
-    };
-    return this.createUser(createUserDto);
+  // =====================================================
+  // 🚀 Métodos que usa AuthService
+  // =====================================================
+
+  /** Buscar usuario por email */
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email: email.toLowerCase() }).exec();
   }
 
-// 🔐 Validar usuario (login)
-async validateUser(loginDto: LoginDto): Promise<UserDocument> {
-  const user = await this.userModel.findOne({ email: loginDto.email }).exec(); // importante exec()
+  /** Validar usuario al hacer login */
+  async validateUser(loginDto: { email: string; password: string }): Promise<UserDocument> {
+    // 🔹 Normalizar email
+    const normalizedEmail = loginDto.email.toLowerCase();
 
-  if (!user) {
-    throw new NotFoundException('Usuario no encontrado');
-  }
+    const user = await this.userModel.findOne({ email: normalizedEmail }).exec();
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
 
-  // Aquí el cast asegura que Mongoose reconozca el método comparePassword
-  const isMatch = await (user as UserDocument).comparePassword(loginDto.password);
+    const isPasswordValid = await user.comparePassword(loginDto.password);
+    if (!isPasswordValid) throw new UnauthorizedException('Contraseña incorrecta');
 
-  if (!isMatch) {
-    throw new BadRequestException('Contraseña incorrecta');
-  }
-
-  return user;
-}
-
-  // 📧 Buscar usuario por email (para AuthService)
-  async findByEmail(email: string): Promise<User | null> {
-    return await this.userModel.findOne({ email }).exec();
+    return user;
   }
 }
