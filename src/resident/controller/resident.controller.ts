@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { ResidentService } from '../resident.service';
 import { CreateResidentDto } from '../dto/create-resident.dto';
@@ -33,6 +33,16 @@ export class ResidentController {
   @ApiResponse({ status: 200, description: 'List of residents', type: [Resident] })
   async findAll(): Promise<Resident[]> {
     return this.residentService.findAll();
+  }
+  
+  // 🔹 GET /resident/me
+  @Get('me')
+  @Roles(Role.Resident, Role.Representative, Role.Admin)
+  async getMyProfile(@Req() req: any): Promise<Resident> {
+    console.log('👤 Usuario en request:', req.user);
+    const userId = req.user?._id; // 👈 aquí estaba el detalle
+    if (!userId) throw new HttpException('User ID no encontrado', 401);
+    return this.residentService.findResidentByUserId(userId);
   }
 
   // 🔹 READ BY ID

@@ -7,7 +7,7 @@ import { RoomModule } from '../room/room.module'; // 👈 importar RoomModule
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
     RoomModule, // 👈 ahora UserService puede usar RoomService
   ],
   providers: [UserService],

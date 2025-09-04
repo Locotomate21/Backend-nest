@@ -6,7 +6,7 @@ import { CreateRoomDto } from '../room/dto/create-room.dto';
 import { UpdateRoomDto } from '../room/dto/update-room.dto';
 import { RoomResponseDto } from '../room/dto/room-response.dto';
 import { Resident } from '../resident/schema/resident.schema';
-import { Service } from '../service/schema/service.schema';
+import { Service } from './schema/service.schema';
 
 @Injectable()
 export class RoomService {

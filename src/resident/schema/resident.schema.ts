@@ -18,6 +18,9 @@ export class Resident {
 
   @Prop({ required: true, unique: true })
   email!: string;
+  
+  @Prop({ required: true })
+  phone!: number;
 
   @Prop({ required: true })
   period!: string;

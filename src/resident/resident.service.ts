@@ -129,6 +129,23 @@ export class ResidentService {
     return resident.populate('room');
   }
 
+  // 🔹 READ BY USER ID
+  async findResidentByUserId(userId: string): Promise<Resident> {
+    const resident = await this.residentModel
+      .findOne({ user: new Types.ObjectId(userId) })
+      .populate('room', 'number floor')
+      .populate('user', 'fullName email role')
+      .exec();
+
+        console.log("📌 Resultado Resident:", resident);
+
+    if (!resident) {
+      throw new NotFoundException('Residente no encontrado');
+    }
+
+    return resident;
+  }
+
   // 🔹 DELETE
   async remove(id: string, user: any): Promise<void> {
     if (user.role !== Role.Admin) {

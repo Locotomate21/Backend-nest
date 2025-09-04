@@ -12,6 +12,9 @@ import { UserModule } from './users/user.module';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
+import { StatsModule } from './stats/stats.module';
+import { NewsModule } from './news/news.module';
+import { AssemblyModule } from './assemblies/assembly.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { RolesGuard } from './auth/roles.guard';
     ResidentModule,
     RoomModule,
     ReportModule,
+    StatsModule,
+    NewsModule,
+    AssemblyModule,
   ],
   providers: [
     JwtStrategy,

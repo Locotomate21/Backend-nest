@@ -49,9 +49,9 @@ UserSchema.methods.comparePassword = async function (
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Error al comparar contraseñas:', error.message);
+      /* console.error('Error al comparar contraseñas:', error.message); */
     } else {
-      console.error('Error desconocido al comparar contraseñas');
+      /* console.error('Error desconocido al comparar contraseñas') */;
     }
     return false;
   }

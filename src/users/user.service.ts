@@ -92,7 +92,7 @@ export class UserService {
 
       return user;
     } catch (error: any) {
-      console.error('❌ Error en findOne:', error.message, error.stack);
+/*       console.error('❌ Error en findOne:', error.message, error.stack); */
       throw new InternalServerErrorException('Error desconocido al obtener usuario');
     }
   }

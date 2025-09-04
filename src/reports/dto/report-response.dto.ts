@@ -26,7 +26,7 @@ export class ReportResponseDto {
     room: {
       _id: string;
       number: string;
-      floor: string;
+      floor: string | number;
     } | null;
   } | null;
 
@@ -38,4 +38,20 @@ export class ReportResponseDto {
 
   @ApiProperty({ example: 'Se reemplazó la grifería', required: false })
   actionTaken?: string;
+
+  @ApiProperty({
+    example: {
+      _id: '68a48cd0b3a7ee4948183623',
+      fullName: 'Ferney Peralta',
+      email: 'fernando@example.com',
+      role: 'representative',
+    },
+    description: 'User (representative/admin) who created the report',
+  })
+  createdBy!: {
+    _id: string;
+    fullName: string;
+    email: string;
+    role: string;
+  };
 }

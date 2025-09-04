@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from './roles.decorator';
 import { Role } from '../common/roles.enum';
@@ -13,13 +13,21 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) return true;
+    // Si no hay roles definidos, dejamos pasar
+    if (!requiredRoles || requiredRoles.length === 0) return true;
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
     if (!user) throw new UnauthorizedException('No autenticado');
 
-    return requiredRoles.includes(user.role as Role);
+    // Validamos que el rol exista en los permitidos
+    const hasRole = requiredRoles.includes(user.role as Role);
+    if (!hasRole) return false;
+
+    // Opcional: podrías validar algo más aquí si quisieras, por ejemplo floor
+    if (user.role === Role.Representative && !user.floor) throw new ForbiddenException('Representative has no assigned floor');
+
+    return true;
   }
 }

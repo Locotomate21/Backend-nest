@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Room } from '../../room/schema/room.schema';
+import { Room } from './room.schema';
 
 export type ServiceDocument = Service & Document;
 

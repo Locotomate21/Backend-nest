@@ -16,41 +16,60 @@ import { Role } from '../../common/roles.enum';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  // ✅ CREATE
-  @Post()
-  @Roles(Role.Representative, Role.Admin)
-  @ApiOperation({ summary: 'Create a new report (representative or admin)' })
-  @ApiBody({
-    type: CreateReportDto,
-    schema: {
-      example: {
-        resident: 'residentIdHere',
-        reason: 'Daño en la ducha del baño 301',
-        actionTaken: 'Se reemplazó la grifería',
-      },
+// ✅ CREATE
+@Post()
+@Roles(Role.Representative, Role.Admin)
+@ApiOperation({ summary: 'Create a new report (representative or admin)' })
+@ApiBody({
+  type: CreateReportDto,
+  schema: {
+    example: {
+      resident: 'residentIdHere',
+      reason: 'Daño en la ducha del baño 301',
+      actionTaken: 'Se reemplazó la grifería',
     },
-  })
-  @ApiResponse({ status: 201, type: ReportResponseDto })
-  async create(@Body() dto: CreateReportDto, @Req() req: any): Promise<ReportResponseDto> {
-    try {
-      return await this.reportsService.create(dto, req.user.sub);
-    } catch (err) {
-      throw new HttpException(
-        { error: 'Failed to create report', details: err instanceof Error ? err.message : String(err) },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  },
+})
+@ApiResponse({ status: 201, type: ReportResponseDto })
+async create(
+  @Body() dto: CreateReportDto,
+  @Req() req: any,  // 👈 aquí viene el usuario autenticado
+): Promise<ReportResponseDto> {
+  try { 
+/*     console.log('USER EN REPORT CONTROLLER:', req.user);  */
+    return await this.reportsService.create(dto, req.user); // 👈 pasa solo el ID
+  } catch (err) {
+    throw new HttpException(
+      {
+        error: 'Failed to create report',
+        details: err instanceof Error ? err.message : String(err),
+      },
+      HttpStatus.BAD_REQUEST,
+    );
   }
+}
 
   // ✅ READ ALL
   @Get()
-  @Roles(Role.Representative, Role.Admin)
+  @Roles(Role.Representative, Role.Admin, Role.Resident)
   @ApiOperation({ summary: 'Get all reports (admin sees all, representative sees their own, resident sees their own)' })
   @ApiResponse({ status: 200, type: [ReportResponseDto] })
   async findAll(@Req() req: any): Promise<ReportResponseDto[]> {
     return this.reportsService.findAll(req.user);
   }
 
+  // ✅ READ by Resident
+  @Get('resident/:residentId')
+  @Roles(Role.Representative, Role.Admin, Role.Resident)
+  @ApiOperation({ summary: 'Get reports by resident (restrictions apply)' })
+  @ApiResponse({ status: 200, type: [ReportResponseDto] })
+  async findByResident(
+    @Param('residentId') residentId: string,
+    @Req() req: any,
+  ): Promise<ReportResponseDto[]> {
+    return this.reportsService.findByResident(residentId, req.user);
+  }
+  
   // ✅ READ by ID
   @Get(':id')
   @Roles(Role.Representative, Role.Admin)
@@ -58,15 +77,6 @@ export class ReportsController {
   @ApiResponse({ status: 200, type: ReportResponseDto })
   async findById(@Param('id') id: string, @Req() req: any): Promise<ReportResponseDto> {
     return this.reportsService.findById(id, req.user);
-  }
-
-  // ✅ READ by Resident
-  @Get('resident/:residentId')
-  @Roles(Role.Representative, Role.Admin)
-  @ApiOperation({ summary: 'Get reports by resident (restrictions apply)' })
-  @ApiResponse({ status: 200, type: [ReportResponseDto] })
-  async findByResident(@Param('residentId') residentId: string, @Req() req: any): Promise<ReportResponseDto[]> {
-    return this.reportsService.findByResident(residentId, req.user);
   }
 
   // ✅ UPDATE
