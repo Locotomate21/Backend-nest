@@ -18,20 +18,24 @@ export class ResidentService {
     private readonly userModel: Model<UserDocument>,
   ) {}
 
+  // 🔹 Helper para validar roles
+  private checkRole(user: any, allowedRoles: Role[], errorMsg = 'You are not allowed') {
+    if (!allowedRoles.includes(user.role)) {
+      throw new ForbiddenException(errorMsg);
+    }
+  }
+
   // 🔹 CREATE
   async create(createResidentDto: CreateResidentDto, requestUser: any): Promise<Resident> {
-    if (![Role.Admin, Role.Representative].includes(requestUser.role)) {
-      throw new ForbiddenException('You are not allowed to create residents');
-    }
+    this.checkRole(requestUser, [Role.Admin, Role.Representative], 'You are not allowed to create residents');
 
-    // 👇 validamos que el User que se quiere asociar exista
     const targetUser = await this.userModel.findById(createResidentDto.user);
     if (!targetUser) throw new NotFoundException('User to link with Resident not found');
 
     const newResident = new this.residentModel({
       ...createResidentDto,
       enrollmentDate: createResidentDto.enrollmentDate || new Date(),
-      user: targetUser._id,   // ✅ ahora sí el user correcto
+      user: targetUser._id,
     });
 
     if (createResidentDto.room) {
@@ -39,6 +43,7 @@ export class ResidentService {
       if (!roomDoc) throw new NotFoundException('Room not found');
       if (roomDoc.occupied) throw new ForbiddenException('Room is already occupied');
 
+      // Restricción especial para Representatives
       if (requestUser.role === Role.Representative) {
         if (!requestUser.floor) {
           throw new ForbiddenException('Representative must have an assigned floor');
@@ -55,10 +60,8 @@ export class ResidentService {
       newResident.room = roomDoc._id as Types.ObjectId;
     }
 
-    // 👉 Guardamos el resident
     await newResident.save();
 
-    // 👉 Actualizamos el User con la referencia del resident
     targetUser.resident = newResident._id as Types.ObjectId;
     await targetUser.save();
 
@@ -77,11 +80,17 @@ export class ResidentService {
     return resident;
   }
 
+  // 🔹 READ BY STUDENT CODE
+  async findByStudentCode(studentCode: string): Promise<Resident | null> {
+    return this.residentModel
+      .findOne({ studentCode: parseInt(studentCode) })
+      .populate('room')
+      .exec();
+  }
+
   // 🔹 UPDATE
   async update(id: string, updateResidentDto: UpdateResidentDto, user: any): Promise<Resident> {
-    if (![Role.Admin, Role.Representative].includes(user.role)) {
-      throw new ForbiddenException('You are not allowed to update residents');
-    }
+    this.checkRole(user, [Role.Admin, Role.Representative], 'You are not allowed to update residents');
 
     const resident = await this.residentModel.findById(id);
     if (!resident) throw new NotFoundException('Resident not found');
@@ -90,7 +99,6 @@ export class ResidentService {
       updateResidentDto.room &&
       (!resident.room || updateResidentDto.room.toString() !== resident.room.toString())
     ) {
-      // liberar habitación anterior si tenía
       if (resident.room) {
         const oldRoom = await this.roomService.findById(resident.room.toString());
         if (oldRoom) {
@@ -100,15 +108,12 @@ export class ResidentService {
         }
       }
 
-      // asignar nueva habitación
       const newRoom = await this.roomService.findById(updateResidentDto.room as string);
       if (!newRoom) throw new NotFoundException('Room not found');
       if (newRoom.occupied) throw new ForbiddenException('Room is already occupied');
 
       if (user.role === Role.Representative) {
-        if (!user.floor) {
-          throw new ForbiddenException('Representative must have an assigned floor');
-        }
+        if (!user.floor) throw new ForbiddenException('Representative must have an assigned floor');
         if (user.floor !== newRoom.floor) {
           throw new ForbiddenException(`Representatives can only assign rooms on floor ${user.floor}`);
         }
@@ -121,7 +126,6 @@ export class ResidentService {
       resident.room = newRoom._id as Types.ObjectId;
     }
 
-    // aplicar solo los demás campos (sin room)
     const { room, ...rest } = updateResidentDto;
     Object.assign(resident, rest);
 
@@ -137,20 +141,13 @@ export class ResidentService {
       .populate('user', 'fullName email role')
       .exec();
 
-        console.log("📌 Resultado Resident:", resident);
-
-    if (!resident) {
-      throw new NotFoundException('Residente no encontrado');
-    }
-
+    if (!resident) throw new NotFoundException('Residente no encontrado');
     return resident;
   }
 
   // 🔹 DELETE
   async remove(id: string, user: any): Promise<void> {
-    if (user.role !== Role.Admin) {
-      throw new ForbiddenException('You are not allowed to delete residents');
-    }
+    this.checkRole(user, [Role.Admin], 'You are not allowed to delete residents');
 
     const resident = await this.residentModel.findById(id);
     if (!resident) throw new NotFoundException('Resident not found');
@@ -165,5 +162,38 @@ export class ResidentService {
     }
 
     await this.residentModel.findByIdAndDelete(id).exec();
+  }
+
+  // 🔹 UPDATE MY PROFILE
+  async updateMyProfile(userId: string, updateData: Partial<Resident>, requestUser?: any): Promise<Resident> {
+    const resident = await this.residentModel.findOne({ user: userId });
+    if (!resident) throw new NotFoundException('Residente no encontrado');
+
+    // 🚨 Restricción: si no es Admin, solo puede editar su propio perfil
+    if (requestUser && requestUser.role !== Role.Admin && requestUser._id.toString() !== userId.toString()) {
+      throw new ForbiddenException('No puedes modificar el perfil de otro usuario');
+    }
+
+    // 🔹 Restricción de tiempo (ejemplo: 30 días)
+    const daysSinceEnrollment =
+      (Date.now() - new Date(resident.enrollmentDate).getTime()) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceEnrollment > 30 && requestUser?.role !== Role.Admin) {
+      throw new ForbiddenException('No puedes actualizar tu información después de 30 días de ingreso');
+    }
+
+    // 🔹 Restricción de campos editables
+    const allowedFields = requestUser?.role === Role.Admin
+      ? ['fullName', 'email', 'phone', 'academicProgram', 'period']
+      : ['fullName', 'email', 'phone'];
+
+    for (const key of allowedFields) {
+      if (updateData[key] !== undefined) {
+        (resident as any)[key] = updateData[key];
+      }
+    }
+
+    await resident.save();
+    return resident.populate('room');
   }
 }

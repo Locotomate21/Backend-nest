@@ -22,7 +22,9 @@ async function bootstrap() {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
+        name: 'Authorization',
         description: 'Ingrese el token JWT aqui',
+        in: 'header',
       },
       'jwt', // Nombre del esquema para Swagger
     )

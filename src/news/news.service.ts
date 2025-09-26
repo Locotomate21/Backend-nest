@@ -9,36 +9,39 @@ import { Role } from '../common/roles.enum';
 export class NewsService {
   constructor(@InjectModel(News.name) private readonly newsModel: Model<News>) {}
 
-  // ✅ CREATE
-  async create(dto: CreateNewsDto, user: any) {
-    const { role, floor, _id } = user;
+// ✅ CREATE
+async create(dto: CreateNewsDto, user: any) {
+  const { role, floor, _id } = user;
 
-    if (dto.type === 'general') {
-      if (![Role.Admin, Role.President, Role.SecretaryGeneral].includes(role)) {
-        throw new ForbiddenException('No tienes permiso para crear noticias generales');
-      }
+  if (dto.type === 'general') {
+    if (![Role.Admin, Role.President, Role.SecretaryGeneral].includes(role)) {
+      throw new ForbiddenException('No tienes permiso para crear noticias generales');
     }
-
-    if (dto.type === 'floor') {
-      if (role !== Role.Representative) {
-        throw new ForbiddenException('Solo los representantes pueden crear noticias de piso');
-      }
-
-      if (!floor) {
-        throw new ForbiddenException('El representante no tiene piso asignado');
-      }
-
-      dto.floor = floor; // fuerza a que sea solo su piso
-    }
-
-    const news = new this.newsModel({
-      ...dto,
-      createdBy: _id,
-      publishedAt: new Date(),
-    });
-
-    return news.save();
   }
+
+  if (dto.type === 'floor') {
+    if (role !== Role.Representative) {
+      throw new ForbiddenException('Solo los representantes pueden crear noticias de piso');
+    }
+
+    if (!floor) {
+      throw new ForbiddenException('El representante no tiene piso asignado');
+    }
+
+    dto.floor = floor; // fuerza a que sea solo su piso
+  }
+
+  const news = await this.newsModel.create({
+    ...dto,
+    createdBy: _id,
+    publishedAt: new Date(),
+  });
+
+  // 🔥 recargar con populate para que el frontend siempre reciba el objeto completo
+  return this.newsModel
+    .findById(news._id)
+    .populate('createdBy', '_id fullName role');
+}
 
   // ✅ FIND ALL
   async findAll(user: any) {
@@ -53,6 +56,23 @@ export class NewsService {
 
     // Admin, president, secretaryGeneral → ven todas
     return this.newsModel.find().populate('createdBy', '_id fullName role');
+  }
+
+  // ✅ UPDATE con validación de permisos
+  async update(id: string, dto: Partial<CreateNewsDto>, user: any) {
+    const news = await this.newsModel.findById(id);
+    if (!news) throw new NotFoundException('Noticia no encontrada');
+
+    // Restricciones de edición: solo creador o admin/president/secGen
+    if (
+      news.createdBy?._id.toString() !== user._id.toString() &&
+      ![Role.Admin, Role.President, Role.SecretaryGeneral].includes(user.role)
+    ) {
+      throw new ForbiddenException('No tienes permiso para editar esta noticia');
+    }
+
+    Object.assign(news, dto, { updatedAt: new Date() });
+    return news.save();
   }
 
   // ✅ FIND ONE con validación de permisos

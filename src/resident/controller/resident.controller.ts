@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { ResidentService } from '../resident.service';
 import { CreateResidentDto } from '../dto/create-resident.dto';
 import { UpdateResidentDto } from '../dto/update-resident.dto';
 import { Resident } from '../schema/resident.schema';
+import { UpdateMyProfileDto } from '../dto/update-my-profile.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RolesGuard } from '../../auth/roles.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -39,10 +40,33 @@ export class ResidentController {
   @Get('me')
   @Roles(Role.Resident, Role.Representative, Role.Admin)
   async getMyProfile(@Req() req: any): Promise<Resident> {
-    console.log('👤 Usuario en request:', req.user);
+/*     console.log('👤 Usuario en request:', req.user); */
     const userId = req.user?._id; // 👈 aquí estaba el detalle
     if (!userId) throw new HttpException('User ID no encontrado', 401);
     return this.residentService.findResidentByUserId(userId);
+  }
+
+  // 🔹 GET BY STUDENT CODE
+  @Get('by-student-code/:studentCode')
+  @Roles(Role.Representative, Role.Admin, Role.FloorAuditor, Role.GeneralAuditor)
+  @ApiOperation({ summary: 'Get a resident by student code' })
+  @ApiResponse({ status: 200, description: 'Resident found by student code', type: Resident })
+  async findByStudentCode(@Param('studentCode') studentCode: string): Promise<Resident> {
+    const resident = await this.residentService.findByStudentCode(studentCode);
+    if (!resident) {
+      throw new HttpException('Resident not found', 404);
+    }
+    return resident;
+  }
+
+// 🔹 PATCH /resident/me
+  @Patch('me')
+  @Roles(Role.Resident, Role.Representative, Role.Admin)
+  async updateMyProfile(@Req() req: any, @Body() updateDto: UpdateMyProfileDto) {
+    const userId = req.user?._id;
+    if (!userId) throw new HttpException('User ID no encontrado', 401);
+
+    return this.residentService.updateMyProfile(userId, updateDto);
   }
 
   // 🔹 READ BY ID
@@ -53,6 +77,7 @@ export class ResidentController {
   async findOne(@Param('id') id: string): Promise<Resident> {
     return this.residentService.findOne(id);
   }
+  
 
   // 🔹 UPDATE (solo admin o representative) 
   @Put(':id')

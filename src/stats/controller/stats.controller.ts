@@ -14,20 +14,20 @@ import { Role } from '../../common/roles.enum';
 export class StatsController {
   constructor(private readonly statsService: StatsService) {}
 
-  // Endpoint general, devuelve estadísticas según el rol
-  @Roles(Role.Representative, Role.Admin, Role.Resident)
+  // Endpoint general
   @Get()
+  @Roles(Role.Representative, Role.Admin, Role.Resident)
   @ApiResponse({ status: 200, type: StatsResponseDto })
   async getStats(@Req() req: any): Promise<StatsResponseDto> {
     return this.statsService.getStats(req.user);
   }
 
-  // Endpoint específico para el dashboard del representante
-  @Roles(Role.Representative)
+  // Endpoint específico para el dashboard del representante - CORREGIDO
   @Get('representative/dashboard')
+  @Roles(Role.Representative)
   @ApiResponse({ status: 200, type: StatsResponseDto })
   async getRepresentativeDashboard(@Req() req: any): Promise<StatsResponseDto> {
     const user = req.user;
-    return this.statsService.getStats(user); // ya incluye floors
+    return this.statsService.getStats(user);
   }
 }

@@ -1,14 +1,9 @@
     import { ApiProperty } from '@nestjs/swagger';
     import { IsString, IsOptional, IsEnum, IsNumber, ValidateNested } from 'class-validator';
     import { Type } from 'class-transformer';
+    import { AssemblyType } from './create-assembly.dto'; 
 
-    // 1️⃣ Enum para el tipo de asamblea
-    export enum AssemblyType {
-    GENERAL = 'general',
-    FLOOR = 'floor',
-    }
-
-    // 2️⃣ Sub-DTO para asistencia
+    // Sub-DTO para asistencia (igual que en create)
     class AttendanceDto {
     @ApiProperty({ example: 95 })
     @IsNumber()
@@ -19,43 +14,52 @@
     total!: number;
     }
 
-    // 3️⃣ DTO principal
-    export class CreateAssemblyDto {
+    export class UpdateAssemblyDto {
     @ApiProperty({ 
         description: 'Título de la asamblea',
+        required: false,
         example: 'Asamblea General - Enero 2025' 
     })
+    @IsOptional()
     @IsString()
-    title!: string;
+    title?: string;
 
     @ApiProperty({ 
         description: 'Tipo de asamblea: general o de piso',
-        enum: AssemblyType,
+        enum: AssemblyType, 
+        required: false,
         example: AssemblyType.GENERAL 
     })
+    @IsOptional()
     @IsEnum(AssemblyType)
-    type!: AssemblyType;
+    type?: AssemblyType;
 
     @ApiProperty({ 
         description: 'Fecha de la asamblea (formato YYYY-MM-DD)',
+        required: false,
         example: '2025-01-15' 
     })
+    @IsOptional()
     @IsString()
-    date!: string;
+    date?: string;
 
     @ApiProperty({ 
         description: 'Hora de la asamblea (formato HH:MM)',
+        required: false,
         example: '19:00' 
     })
+    @IsOptional()
     @IsString()
-    time!: string;
+    time?: string;
 
     @ApiProperty({ 
         description: 'Ubicación donde se realizará la asamblea',
+        required: false,
         example: 'Salón de actos, Planta baja' 
     })
+    @IsOptional()
     @IsString()
-    location!: string;
+    location?: string;
 
     @ApiProperty({ 
         description: 'Descripción adicional de la asamblea',
@@ -72,14 +76,15 @@
         example: 2 
     })
     @IsOptional()
-    @Type(() => Number) // 👈 convierte "2" en número
+    @Type(() => Number)
     @IsNumber()
     floor?: number;
 
     @ApiProperty({ 
         description: 'Control de asistencia',
         required: false, 
-        type: () => AttendanceDto 
+        type: () => AttendanceDto,
+        example: { present: 95, total: 107 } 
     })
     @IsOptional()
     @ValidateNested()

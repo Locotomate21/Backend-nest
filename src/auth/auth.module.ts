@@ -6,6 +6,8 @@ import { AuthController } from '../auth/controller/auth.controller';
 import { UserModule } from '../users/user.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
+import { JwtAuthGuard } from './jwt-auth.guard';  // 👈 tu guard JWT
+import { JwtStrategy } from './jwt.strategy';     // 👈 tu estrategia JWT
 
 @Module({
   imports: [
@@ -25,9 +27,14 @@ import { RolesGuard } from './roles.guard';
   controllers: [AuthController],
   providers: [
     AuthService,
+    JwtStrategy, // 👈 registra la estrategia
     {
       provide: APP_GUARD,
-      useClass: RolesGuard,
+      useClass: JwtAuthGuard, // 👈 primero JWT
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,   // 👈 luego roles
     },
   ],
   exports: [AuthService, JwtModule],

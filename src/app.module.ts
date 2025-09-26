@@ -8,6 +8,7 @@ import { ResidentModule } from './resident/resident.module';
 import { RoomModule } from './room/room.module';
 import { ReportModule } from './reports/report.module';
 import { UserModule } from './users/user.module';
+import { DisciplinaryMeasuresModule } from './disciplinary/disciplinary-measures.module';
 
 import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
@@ -38,6 +39,7 @@ import { AssemblyModule } from './assemblies/assembly.module';
     StatsModule,
     NewsModule,
     AssemblyModule,
+    DisciplinaryMeasuresModule,
   ],
   providers: [
     JwtStrategy,

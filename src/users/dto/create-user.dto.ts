@@ -34,6 +34,7 @@ export class CreateUserDto {
       'president',
       'vice_president',
       'general_auditor',
+      'floor_auditor',
       'adjudicator',
       'representative',
     ],

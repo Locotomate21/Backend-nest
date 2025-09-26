@@ -10,7 +10,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
-    // Verifica si la ruta es pública
+    const request = context.switchToHttp().getRequest();
+/*     console.log('⚡ JwtAuthGuard canActivate');
+    console.log('Headers recibidos:', request.headers); */
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

@@ -43,23 +43,12 @@ export class AuthService {
     password: string,
     role?: Role,
   ): Promise<void> {
-    // 🔹 Normalizar role
-    const safeRole: Role = (() => {
-      switch (role?.toString().toLowerCase()) {
-        case 'admin':
-          return Role.Admin;
-        case 'resident':
-          return Role.Resident;
-        case 'representative':
-          return Role.Representative;
-        default:
-          return Role.Resident;
-      }
-    })();
+    // 🔹 Normalizar role (mapeamos todos los posibles)
+    const safeRole: Role = this.normalizeRole(role);
 
     await this.userService.create({
       fullName,
-      email: email.toLowerCase(), // siempre en minúsculas
+      email: email.toLowerCase(),
       password,
       role: safeRole,
       active: true,
@@ -83,18 +72,7 @@ export class AuthService {
     });
 
     // 🔹 Normalizar role
-    const normalizedRole: Role = (() => {
-      switch (user.role?.toString().toLowerCase()) {
-        case 'admin':
-          return Role.Admin;
-        case 'resident':
-          return Role.Resident;
-        case 'representative':
-          return Role.Representative;
-        default:
-          return Role.Resident;
-      }
-    })();
+    const normalizedRole: Role = this.normalizeRole(user.role);
 
     // ✅ Payload JWT (incluye floor)
     const payload: JwtPayload = {
@@ -114,5 +92,31 @@ export class AuthService {
       fullName: user.fullName,
       floor: user.floor ?? null,
     };
+  }
+
+  // 🔹 Método centralizado para normalizar roles
+  private normalizeRole(role?: string | Role): Role {
+    switch (role?.toString().toLowerCase()) {
+      case 'admin':
+        return Role.Admin;
+      case 'resident':
+        return Role.Resident;
+      case 'representative':
+        return Role.Representative;
+      case 'floor_auditor':
+        return Role.FloorAuditor;
+      case 'president':
+        return Role.President;
+      case 'vice_president':
+        return Role.VicePresident;
+      case 'general_auditor':
+        return Role.GeneralAuditor;
+      case 'adjudicator':
+        return Role.Adjudicator;
+      case 'secretary_general':
+        return Role.SecretaryGeneral;
+      default:
+        return Role.Resident;
+    }
   }
 }

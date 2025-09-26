@@ -7,6 +7,8 @@ export type ResidentDocument = Resident & Document;
 
 @Schema({ timestamps: true })
 export class Resident {
+  _id?: Types.ObjectId;
+
   @Prop({ required: true })
   fullName!: string;
 
@@ -20,7 +22,7 @@ export class Resident {
   email!: string;
   
   @Prop({ required: true })
-  phone!: number;
+  phone!: string;
 
   @Prop({ required: true })
   period!: string;

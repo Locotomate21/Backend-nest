@@ -1,13 +1,5 @@
 import { FloorStatsDto } from './stats-floor.dto';
-
-export class RecentActivityDto {
-  type!: 'report' | 'newResident';
-  title!: string;
-  resident?: string;
-  roomNumber?: number;
-  floor?: number;
-  date!: Date;
-}
+import { RecentActivityDto } from './recent-activity.dto';   // 👈 Importar en vez de redefinir
 
 export class StatsResponseDto {
   totalResidents!: number;       
@@ -18,13 +10,13 @@ export class StatsResponseDto {
   reportsCount!: number;         
   floors?: FloorStatsDto[];      
   
-  // ✅ Nueva propiedad para el dashboard del representante
+  // ✅ Datos de ocupación por piso
   occupancyByFloor?: {
     floor: number;
     totalRooms: number;
     occupiedRooms: number;
   }[];
 
-  // 🔹 Agregamos recentActivities
+  // ✅ Últimas actividades unificadas con el DTO correcto
   recentActivities?: RecentActivityDto[];
 }

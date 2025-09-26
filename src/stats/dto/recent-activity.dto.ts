@@ -1,10 +1,15 @@
-export type ActivityType = 'report' | 'newResident';
+export type ActivityType =
+  | 'report'
+  | 'newResident'
+  | 'assembly'
+  | 'disciplinary'
+  | 'news';
 
 export class RecentActivityDto {
-  type!: ActivityType;        // 'report' | 'newResident'
-  title!: string;             // Título descriptivo
-  resident!: string;          // Nombre del residente
-  roomNumber?: number;        // Número de habitación (opcional)
-  floor?: number;             // Piso (opcional)
-  date!: Date;                // Fecha de la actividad
+  type!: ActivityType;        // tipo de actividad
+  title!: string;             // título descriptivo
+  resident?: string;          // nombre del residente (si aplica)
+  roomNumber?: number;        // número de habitación (si aplica)
+  floor?: number;             // piso (si aplica)
+  date!: Date;                // fecha de la actividad
 }

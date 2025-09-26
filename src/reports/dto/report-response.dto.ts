@@ -9,34 +9,46 @@ export class ReportResponseDto {
       _id: '6891061f8e15482831e9e393',
       fullName: 'Miguel Angel Franco Moreno',
       idNumber: '123456',
+      studentCode: '123456789',
       room: {
         _id: '6891061f8e15482831e9e393',
         number: '101',
-        floor: '1',
+        floor: 1,
       },
     },
     nullable: true,
     required: false,
-    description: 'Resident linked to the report, null if not populated',
+    description: 'Residente vinculado al reporte (si está populado)',
   })
   resident?: {
     _id: string;
     fullName: string;
     idNumber: string;
+    studentCode: string;
     room: {
-      _id: string;
+      _id: string | null;
       number: string;
-      floor: string | number;
+      floor: number;
     } | null;
   } | null;
 
-  @ApiProperty({ example: '2025-08-04T19:12:31.833Z' })
+  @ApiProperty({
+    example: '2025-09-13T15:45:00.000Z',
+    description: 'Fecha en que se generó el reporte',
+  })
   date!: Date;
 
-  @ApiProperty({ example: 'Daño en la ducha del baño' })
+  @ApiProperty({
+    example: 'Daño en la ducha del baño',
+    description: 'Motivo o razón principal del reporte',
+  })
   reason!: string;
 
-  @ApiProperty({ example: 'Se reemplazó la grifería', required: false })
+  @ApiProperty({
+    example: 'Se reemplazó la grifería',
+    required: false,
+    description: 'Medida correctiva o acción tomada',
+  })
   actionTaken?: string;
 
   @ApiProperty({
@@ -45,13 +57,35 @@ export class ReportResponseDto {
       fullName: 'Ferney Peralta',
       email: 'fernando@example.com',
       role: 'representative',
+      resident: {
+        _id: '6891061f8e15482831e9e393',
+        fullName: 'Miguel Angel Franco Moreno',
+        studentCode: '202012345',
+        room: {
+          _id: '6891061f8e15482831e9e393',
+          number: '101',
+          floor: 1,
+        },
+      },
     },
-    description: 'User (representative/admin) who created the report',
+    nullable: true,
+    required: false,
+    description: 'Usuario (representante/admin) que creó el reporte',
   })
-  createdBy!: {
-    _id: string;
+  createdBy?: {
+    _id: string | null;
     fullName: string;
     email: string;
     role: string;
-  };
+    resident?: {
+      _id: string | null;
+      fullName: string;
+      studentCode: string;
+      room: {
+        _id: string | null;
+        number: string;
+        floor: number;
+      } | null;
+    } | null;
+  } | null;
 }
