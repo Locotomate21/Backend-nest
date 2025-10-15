@@ -36,8 +36,11 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  await app.listen(3000);
-  console.log(`🚀 Aplicación corriendo en http://localhost:3000`);
-  console.log(`📄 Documentación Swagger en http://localhost:3000/api-docs`);
+  // 🔥 Aquí está el cambio importante
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0'); // <- Render requiere 0.0.0.0, no localhost
+
+  console.log(`🚀 Aplicación corriendo en puerto ${port}`);
+  console.log(`📄 Documentación Swagger en /api-docs`);
 }
 bootstrap();
